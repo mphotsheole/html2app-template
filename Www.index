@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Farm Calculator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            background-color: #8BC34A; /* Light green background */
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .calculator { 
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        h2 {
+            color: #2E7D32;
+        }
+        input, select, button {
+            margin: 5px;
+            padding: 8px;
+        }
+        .order-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .order-table th, .order-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .order-table th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .delete-btn {
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Cabbage Calculator -->
+        <div class="calculator">
+            <h2>Cabbage Calculator</h2>
+            <input type="number" id="quantity" placeholder="Number of cabbage heads">
+            <select id="priceOption">
+                <option value="8">Economy (P8/head)</option>
+                <option value="10">Budget (P10/head)</option>
+                <option value="15">Standard (P15/head)</option>
+                <option value="20">Premium (P20/head)</option>
+            </select>
+            <button onclick="calculateCabbage()">Calculate Total</button>
+            <div id="cabbageResult"></div>
+        </div>
+
+        <!-- Green Pepper Calculator -->
+        <div class="calculator">
+            <h2>Green Pepper Calculator</h2>
+            <input type="number" id="greenPepperMass" step="0.1" placeholder="Mass (kg)">
+            <input type="number" id="greenPepperPrice" placeholder="Unit price per kg (P)">
+            <button onclick="calculateGreenPepper()">Calculate Total</button>
+            <div id="greenPepperResult"></div>
+        </div>
+
+        <!-- Tomato Calculator -->
+        <div class="calculator">
+            <h2>Tomato Calculator</h2>
+            <input type="number" id="tomatoMass" step="0.1" placeholder="Mass (kg)">
+            <input type="number" id="tomatoPrice" placeholder="Unit price per kg (P)">
+            <button onclick="calculateTomato()">Calculate Total</button>
+            <div id="tomatoResult"></div>
+        </div>
+
+        <h2>Order History</h2>
+        <table class="order-table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Date</th>
+                    <th>Quantity/Mass</th>
+                    <th>Unit Price</th>
+                    <th>Total Price</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="orderHistory"></tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="3" style="text-align: right; font-weight: bold;">Grand Total:</td>
+                    <td colspan="2" style="font-weight: bold;" id="grandTotal">P0.00</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <script>
+        let orders = JSON.parse(localStorage.getItem('farmOrders')) || [];
+
+        function calculateCabbage() {
+            const quantity = parseInt(document.getElementById('quantity').value);
+            const price = parseInt(document.getElementById('priceOption').value);
+            
+            if (quantity < 1 || isNaN(quantity)) {
+                alert("Please enter valid quantity!");
+                return;
+            }
+
+            const total = quantity * price;
+            addOrder('Cabbage', quantity, 'heads', price, total);
+            updateResult('cabbageResult', total);
+        }
+
+        function calculateGreenPepper() {
+            const mass = parseFloat(document.getElementById('greenPepperMass').value);
+            const price = parseFloat(document.getElementById('greenPepperPrice').value);
+            
+            if (isNaN(mass) || mass <= 0 || isNaN(price) || price <= 0) {
+                alert("Please enter valid values!");
+                return;
+            }
+
+            const total = mass * price;
+            addOrder('Green Pepper', mass, 'kg', price, total);
+            updateResult('greenPepperResult', total);
+        }
+
+        function calculateTomato() {
+            const mass = parseFloat(document.getElementById('tomatoMass').value);
+            const price = parseFloat(document.getElementById('tomatoPrice').value);
+            
+            if (isNaN(mass) || mass <= 0 || isNaN(price) || price <= 0) {
+                alert("Please enter valid values!");
+                return;
+            }
+
+            const total = mass * price;
+            addOrder('Tomato', mass, 'kg', price, total);
+            updateResult('tomatoResult', total);
+        }
+
+        function addOrder(product, quantity, unit, price, total) {
+            const order = {
+                product,
+                date: new Date().toLocaleString(),
+                quantity,
+                unit,
+                price,
+                total
+            };
+            orders.push(order);
+            localStorage.setItem('farmOrders', JSON.stringify(orders));
+            updateOrderTable();
+        }
+
+        function updateResult(elementId, total) {
+            document.getElementById(elementId).innerHTML = `
+                <h3>Total: P${total.toFixed(2)}</h3>
+            `;
+        }
+
+        function updateOrderTable() {
+            const tbody = document.getElementById('orderHistory');
+            tbody.innerHTML = orders.map((order, index) => `
+                <tr>
+                    <td>${order.product}</td>
+                    <td>${order.date}</td>
+                    <td>${order.quantity} ${order.unit}</td>
+                    <td>P${order.price.toFixed(2)}</td>
+                    <td>P${order.total.toFixed(2)}</td>
+                    <td>
+                        <button class="delete-btn" onclick="deleteOrder(${index})">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            const grandTotal = orders.reduce((sum, order) => sum + order.total, 0);
+            document.getElementById('grandTotal').textContent = `P${grandTotal.toFixed(2)}`;
+        }
+
+        function deleteOrder(index) {
+            if (confirm("Delete this order?")) {
+                orders.splice(index, 1);
+                localStorage.setItem('farmOrders', JSON.stringify(orders));
+                updateOrderTable();
+            }
+        }
+
+        // Initial load
+        updateOrderTable();
+    </script>
+</body>
+</html>
